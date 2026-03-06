@@ -335,12 +335,12 @@
     // - maxObstacles：畫面中最多石頭數量上限
     // - stonesPerFruit：每吃到 1 顆水果，希望增加的「目標石頭數」
     //   例：中級 → 第 N 顆水果後，目標石頭數 = min(N * 1, 25)
-    //       高級 → 第 N 顆水果後，目標石頭數 = min(N * 2, 40)
+    //       高級 → 第 N 顆水果後，目標石頭數 = min(N * 1, 40)
     // pointsPerFruit：每吃一顆水果得到的分數（中級 2 分、高級 3 分）
     const difficultyLevels = {
       easy:   { speed: 150, maxObstacles: 0,  stonesPerFruit: 0, pointsPerFruit: 1 },
       medium: { speed: 130, maxObstacles: 25, stonesPerFruit: 1, pointsPerFruit: 2 },
-      hard:   { speed: 100, maxObstacles: 40, stonesPerFruit: 2, pointsPerFruit: 3 },
+      hard:   { speed: 100, maxObstacles: 40, stonesPerFruit: 1, pointsPerFruit: 3 },
     };
 
     // 蛇的樣式：15 種顏色（頭部亮色、身體暗色）
@@ -772,7 +772,7 @@
         return; // 初級或未設定時不產生障礙物
       }
 
-      // 目標石頭數：中級 = N， 高級 = 2N（N 為 fruitsEaten），並且有上限
+      // 目標石頭數：中級 = N， 高級 = N（N 為 fruitsEaten），並且有上限
       const targetCount = Math.min(
         config.maxObstacles,
         config.stonesPerFruit * fruitsEaten
