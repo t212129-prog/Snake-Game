@@ -251,7 +251,44 @@
       box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
     }
 
-    @media (max-width: 480px) {
+    /* 手機版觸控方向鍵區塊（預設桌面隱藏，在小螢幕顯示） */
+    .touch-controls {
+      display: none;
+      margin: 8px 0 4px;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .touch-controls-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .touch-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.8);
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.1s ease, border-color 0.1s ease;
+    }
+
+    .touch-btn:active {
+      transform: translateY(1px);
+      background: rgba(30, 64, 175, 0.9);
+      border-color: rgba(129, 140, 248, 0.9);
+    }
+
+    @media (max-width: 768px) {
       .game-wrapper {
         width: 100%;
         margin: 12px;
@@ -259,6 +296,10 @@
       }
       .hint {
         font-size: 10px;
+      }
+      .touch-controls {
+        display: flex;
+        flex-direction: column;
       }
     }
   </style>
@@ -301,6 +342,18 @@
       </div>
     </div>
 
+    <!-- 手機版方向鍵控制（小螢幕顯示） -->
+    <div class="touch-controls" id="touchControls">
+      <div class="touch-controls-row">
+        <button type="button" class="touch-btn" data-dir="up">↑</button>
+      </div>
+      <div class="touch-controls-row">
+        <button type="button" class="touch-btn" data-dir="left">←</button>
+        <button type="button" class="touch-btn" data-dir="down">↓</button>
+        <button type="button" class="touch-btn" data-dir="right">→</button>
+      </div>
+    </div>
+
     <div class="controls">
       <button id="startButton">開始遊戲</button>
       <div class="hint">方向鍵操作 ↑ ↓ ← →</div>
@@ -327,20 +380,24 @@
 
     // 一格的大小（像素）
     const gridSize = 20;
-    // 計算畫面上有幾個格子（寬度、高度）
-    const tileCount = canvas.width / gridSize;
+    // 遊戲區域相對於 Canvas 的邊界留白（像素），避免貼齊外框看起來「超出」
+    const playOffset = 10; // Canvas 內縮 10px 當作邊框
+    // 真正可遊玩的正方形區域邊長
+    const playSize = canvas.width - playOffset * 2; // 400 - 20 = 380
+    // 計算遊戲區域內有幾個格子（寬度、高度）
+    const tileCount = playSize / gridSize; // 380 / 20 = 19
 
     // 難度設定：初級／中級／高級
     // - speed：更新間隔（毫秒）
     // - maxObstacles：畫面中最多石頭數量上限
     // - stonesPerFruit：每吃到 1 顆水果，希望增加的「目標石頭數」
     //   例：中級 → 第 N 顆水果後，目標石頭數 = min(N * 1, 25)
-    //       高級 → 第 N 顆水果後，目標石頭數 = min(N * 1, 40)
+    //       高級 → 第 N 顆水果後，目標石頭數 = min(N * 2, 40)
     // pointsPerFruit：每吃一顆水果得到的分數（中級 2 分、高級 3 分）
     const difficultyLevels = {
       easy:   { speed: 150, maxObstacles: 0,  stonesPerFruit: 0, pointsPerFruit: 1 },
       medium: { speed: 130, maxObstacles: 25, stonesPerFruit: 1, pointsPerFruit: 2 },
-      hard:   { speed: 100, maxObstacles: 40, stonesPerFruit: 1, pointsPerFruit: 3 },
+      hard:   { speed: 100, maxObstacles: 40, stonesPerFruit: 2, pointsPerFruit: 3 },
     };
 
     // 蛇的樣式：15 種顏色（頭部亮色、身體暗色）
@@ -461,7 +518,7 @@
       }
     }, true);
 
-    // === 手機觸控：手指滑動控制方向 ===
+    // === 手機觸控：手指滑動 / 按鈕控制方向 ===
     let touchStartX = 0;
     let touchStartY = 0;
     const minSwipeDistance = 30; // 最少滑動距離（px）才視為方向切換
@@ -512,6 +569,39 @@
         else if (dy > 0 && direction.y !== -1) nextDirection = { x: 0, y: 1 };
       }
     }, { passive: true });
+
+    // 手機版方向鍵按鈕：點擊時控制方向，並可啟動或暫停遊戲
+    const touchControls = document.getElementById("touchControls");
+    function handleDirectionInput(dir) {
+      if (!isGameOver) {
+        // 若尚未開始，先啟動遊戲
+        if (!isRunning && !isPaused && gameLoopId === null) {
+          startGame();
+        }
+      }
+      // 若遊戲目前完全未進行（且非暫停狀態），不處理方向
+      if (!isRunning && !isPaused) return;
+
+      if (dir === "up" && direction.y !== 1) {
+        nextDirection = { x: 0, y: -1 };
+      } else if (dir === "down" && direction.y !== -1) {
+        nextDirection = { x: 0, y: 1 };
+      } else if (dir === "left" && direction.x !== 1) {
+        nextDirection = { x: -1, y: 0 };
+      } else if (dir === "right" && direction.x !== -1) {
+        nextDirection = { x: 1, y: 0 };
+      }
+    }
+
+    if (touchControls) {
+      touchControls.querySelectorAll(".touch-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const dir = btn.dataset.dir;
+          if (!dir) return;
+          handleDirectionInput(dir);
+        });
+      });
+    }
 
     // 監聽開始／暫停／繼續／重新開始按鈕
     startButton.addEventListener("click", () => {
@@ -651,19 +741,13 @@
         y: head.y + direction.y,
       };
 
-      // 檢查是否撞牆：
-      // 為了避免蛇貼到畫面邊緣時看起來超出外框，
-      // 這裡只允許蛇在「內圈」活動（四周保留 1 格安全邊界）
-      const minX = 1;
-      const maxX = tileCount - 2;
-      const minY = 1;
-      const maxY = tileCount - 2;
-
+      // 檢查是否撞牆：超出遊戲區域格子範圍即為遊戲結束
+      // newHead.x / y 以「格子索引」計算，合法範圍為 0 ~ tileCount - 1（含）
       if (
-        newHead.x < minX ||
-        newHead.x > maxX ||
-        newHead.y < minY ||
-        newHead.y > maxY
+        newHead.x < 0 ||
+        newHead.x >= tileCount ||
+        newHead.y < 0 ||
+        newHead.y >= tileCount
       ) {
         endGame();
         return;
@@ -772,7 +856,7 @@
         return; // 初級或未設定時不產生障礙物
       }
 
-      // 目標石頭數：中級 = N， 高級 = N（N 為 fruitsEaten），並且有上限
+      // 目標石頭數：中級 = N， 高級 = 2N（N 為 fruitsEaten），並且有上限
       const targetCount = Math.min(
         config.maxObstacles,
         config.stonesPerFruit * fruitsEaten
@@ -787,11 +871,11 @@
         let placed = false;
 
         for (let i = 0; i < maxTriesPerStone; i++) {
-          // 石頭的可出現範圍：與蛇可活動範圍一致（內圈）
-          const minX = 1;
-          const maxX = tileCount - 2;
-          const minY = 1;
-          const maxY = tileCount - 2;
+          // 石頭的可出現範圍：整個遊戲區域（0 ~ tileCount-1）
+          const minX = 0;
+          const maxX = tileCount - 1;
+          const minY = 0;
+          const maxY = tileCount - 1;
 
           const x = minX + Math.floor(Math.random() * (maxX - minX + 1));
           const y = minY + Math.floor(Math.random() * (maxY - minY + 1));
@@ -845,21 +929,21 @@
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 格線使用白色（半透明）
+      // 格線使用白色（半透明），僅畫在遊戲區域內（四周留出 playOffset 當作邊框）
       ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
       ctx.lineWidth = 0.5;
 
       for (let i = 0; i <= tileCount; i++) {
-        // 垂直線
+        // 垂直線：x 固定，y 從 playOffset 到 playOffset + playSize
         ctx.beginPath();
-        ctx.moveTo(i * gridSize + 0.5, 0);
-        ctx.lineTo(i * gridSize + 0.5, canvas.height);
+        ctx.moveTo(playOffset + i * gridSize + 0.5, playOffset);
+        ctx.lineTo(playOffset + i * gridSize + 0.5, playOffset + playSize);
         ctx.stroke();
 
-        // 水平線
+        // 水平線：y 固定，x 從 playOffset 到 playOffset + playSize
         ctx.beginPath();
-        ctx.moveTo(0, i * gridSize + 0.5);
-        ctx.lineTo(canvas.width, i * gridSize + 0.5);
+        ctx.moveTo(playOffset, playOffset + i * gridSize + 0.5);
+        ctx.lineTo(playOffset + playSize, playOffset + i * gridSize + 0.5);
         ctx.stroke();
       }
     }
@@ -869,8 +953,8 @@
       if (!obstacles.length) return;
 
       obstacles.forEach(({ x, y }) => {
-        const px = x * gridSize;
-        const py = y * gridSize;
+        const px = playOffset + x * gridSize;
+        const py = playOffset + y * gridSize;
         const size = gridSize - 4;
         const offset = (gridSize - size) / 2;
         ctx.fillStyle = "rgba(100, 116, 139, 0.9)";
@@ -885,8 +969,8 @@
 
     // 繪製食物
     function drawFood() {
-      const px = food.x * gridSize;
-      const py = food.y * gridSize;
+      const px = playOffset + food.x * gridSize;
+      const py = playOffset + food.y * gridSize;
       const type = foodTypes[currentFoodTypeIndex] || foodTypes[0];
 
       // 食物使用不同顏色的小水果圖示，縮小尺寸並完全限制在格子內
@@ -927,8 +1011,8 @@
       for (let i = 0; i < snake.length; i++) {
         const segment = snake[i];
         const isHead = i === 0;
-        const px = segment.x * gridSize;
-        const py = segment.y * gridSize;
+        const px = playOffset + segment.x * gridSize;
+        const py = playOffset + segment.y * gridSize;
 
         const size = gridSize - 4;
         const offset = (gridSize - size) / 2;
