@@ -312,10 +312,11 @@
     // - stonesPerFruit：每吃到 1 顆水果，希望增加的「目標石頭數」
     //   例：中級 → 第 N 顆水果後，目標石頭數 = min(N * 1, 25)
     //       高級 → 第 N 顆水果後，目標石頭數 = min(N * 2, 40)
+    // pointsPerFruit：每吃一顆水果得到的分數（中級 2 分、高級 3 分）
     const difficultyLevels = {
-      easy:   { speed: 150, maxObstacles: 0,  stonesPerFruit: 0 },
-      medium: { speed: 100, maxObstacles: 25, stonesPerFruit: 1 },
-      hard:   { speed: 70,  maxObstacles: 40, stonesPerFruit: 2 },
+      easy:   { speed: 150, maxObstacles: 0,  stonesPerFruit: 0, pointsPerFruit: 1 },
+      medium: { speed: 130, maxObstacles: 25, stonesPerFruit: 1, pointsPerFruit: 2 },
+      hard:   { speed: 100, maxObstacles: 40, stonesPerFruit: 2, pointsPerFruit: 3 },
     };
 
     // 蛇的樣式：15 種顏色（頭部亮色、身體暗色）
@@ -382,17 +383,23 @@
     initDifficultyBtns();
     initSnakeColors();
 
-    // 監聽鍵盤事件：方向鍵控制蛇的移動、空白鍵／P 鍵暫停
+    // 監聽鍵盤事件：方向鍵控制蛇的移動、空白鍵／P 鍵開始或暫停
     window.addEventListener("keydown", (event) => {
-      // 空白鍵或 P 鍵：切換暫停／繼續（必須已開局且未結束）
+      // 空白鍵或 P 鍵：第一次可開始遊戲，遊戲中則切換暫停／繼續
       if (event.key === " " || event.code === "Space" || event.key === "p" || event.key === "P") {
-        if (!isGameOver && gameLoopId !== null) {
-          if (isPaused) {
-            resumeGame();
-          } else {
-            pauseGame();
+        if (!isGameOver) {
+          // 尚未開始過：按空白鍵可開始遊戲
+          if (!isRunning && !isPaused && gameLoopId === null) {
+            startGame();
+            event.preventDefault();
+            return;
           }
-          event.preventDefault();
+          // 已開局：切換暫停／繼續
+          if (gameLoopId !== null) {
+            if (isPaused) resumeGame();
+            else pauseGame();
+            event.preventDefault();
+          }
         }
         return;
       }
@@ -600,8 +607,9 @@
 
       // 檢查是否吃到食物
       if (newHead.x === food.x && newHead.y === food.y) {
-        // 吃到食物：分數 +1，更新顯示，並重新隨機放置食物
-        score++;
+        // 吃到食物：依難度加對應分數（初級 1 分、中級 2 分、高級 3 分）
+        const points = difficultyLevels[currentDifficulty]?.pointsPerFruit ?? 1;
+        score += points;
         fruitsEaten++; // 計數本局吃到的水果數
         scoreEl.textContent = score;
 
@@ -713,6 +721,9 @@
           if (isOnSnake(x, y)) continue;
           if (food && x === food.x && y === food.y) continue;
           if (isOnObstacle(x, y)) continue;
+          // 石頭需離當前水果至少 5 格（曼哈頓距離）
+          const distFromFood = Math.abs(x - food.x) + Math.abs(y - food.y);
+          if (distFromFood < 5) continue;
 
           obstacles.push({ x, y });
           placed = true;
@@ -755,8 +766,8 @@
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 輕微的格線（透明度很低，不會太干擾）
-      ctx.strokeStyle = "rgba(55, 65, 81, 0.4)";
+      // 格線使用白色（半透明）
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
       ctx.lineWidth = 0.5;
 
       for (let i = 0; i <= tileCount; i++) {
