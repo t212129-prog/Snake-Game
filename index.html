@@ -384,7 +384,7 @@
     initSnakeColors();
 
     // 監聽鍵盤事件：方向鍵控制蛇的移動、空白鍵／P 鍵開始或暫停
-    window.addEventListener("keydown", (event) => {
+    window.addEventListener("keydown", (event) => {   }, true);
       // 空白鍵或 P 鍵：第一次可開始遊戲，遊戲中則切換暫停／繼續
       if (event.key === " " || event.code === "Space" || event.key === "p" || event.key === "P") {
         if (!isGameOver) {
