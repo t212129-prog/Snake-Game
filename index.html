@@ -88,7 +88,7 @@
     canvas {
       display: block;
       background: #020617;
-      width: 100%; /* 確保手機版自適應縮放 */
+      width: 100%; 
       height: auto;
     }
 
@@ -100,13 +100,13 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      pointer-events: none; /* 讓點擊穿透到下方 */
+      pointer-events: none; 
       text-align: center;
       color: #9ca3af;
       font-size: 14px;
       padding: 0 16px;
       box-sizing: border-box;
-      background: rgba(2, 6, 23, 0.6); /* 增加一點背景變暗效果 */
+      background: rgba(2, 6, 23, 0.6); 
       z-index: 5;
     }
 
@@ -240,91 +240,64 @@
     }
 
     /* =========================================
-       修改：手機版觸控十字鍵 (懸浮毛玻璃效果)
+       修改：虛擬搖桿 (Virtual Joystick) 樣式
        ========================================= */
-    .touch-controls {
+    .joystick-area {
       display: none; /* 預設桌面隱藏 */
       position: absolute;
-      bottom: 20px; /* 距離畫布底部 20px */
+      bottom: 24px; /* 距離畫布底部的距離 */
       left: 50%;
       transform: translateX(-50%);
       z-index: 10;
-      opacity: 0.75; /* 預設半透明，不會完全擋住遊戲 */
-      transition: opacity 0.15s ease, transform 0.1s ease;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      /* 搖桿底座的毛玻璃效果 */
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.2);
+      touch-action: none;
     }
 
-    .touch-controls:active {
-      opacity: 1; /* 手指按壓時變得更清晰 */
-      transform: translateX(-50%) scale(0.96); /* 按壓微縮小回饋 */
-    }
-
-    .d-pad {
-      display: grid;
-      grid-template-columns: 48px 48px 48px;
-      grid-template-rows: 48px 48px 48px;
-      justify-content: center;
-      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
-    }
-
-    .d-btn {
-      width: 48px;
-      height: 48px;
-      /* 半透明玻璃背景 */
-      background: rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(6px); /* 毛玻璃模糊效果 */
-      -webkit-backdrop-filter: blur(6px);
-      border: none;
-      outline: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      /* 邊緣微光與暗角 */
+    .joystick-knob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      /* 搖桿推桿的立體質感 */
+      background: radial-gradient(circle at 30% 30%, #f8fafc, #94a3b8);
       box-shadow: 
-        inset 1px 1px 2px rgba(255, 255, 255, 0.2), 
-        inset -1px -1px 3px rgba(0, 0, 0, 0.3),
-        0 0 1px rgba(255, 255, 255, 0.1);
-      padding: 0;
-      transition: background 0.05s, box-shadow 0.05s;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
+        0 6px 12px rgba(0, 0, 0, 0.6), 
+        inset 0 -4px 6px rgba(0, 0, 0, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.8);
+      transform: translate(-50%, -50%);
+      pointer-events: none; /* 讓感應區完全由底座吸收 */
+      transition: transform 0.1s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
-    .d-btn:active {
-      background: rgba(255, 255, 255, 0.25); /* 按下時稍微亮一點 */
-      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4);
+    /* 搖桿使用中關閉動畫，跟隨手指 */
+    .joystick-area.active .joystick-knob {
+      transition: none;
+      filter: brightness(1.1);
     }
 
-    /* 十字鍵中心無縫過渡區塊 */
-    .d-center {
-      grid-column: 2;
-      grid-row: 2;
-      background: rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      box-shadow: 
-        inset 1px 1px 1px rgba(255, 255, 255, 0.1), 
-        inset -1px -1px 1px rgba(0, 0, 0, 0.2);
+    /* 搖桿上的方向提示小箭頭 */
+    .joystick-arrows {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: 
+        linear-gradient(to bottom, rgba(255,255,255,0.4) 2px, transparent 2px) 50% 0 / 8px 8px no-repeat, /* 上 */
+        linear-gradient(to top, rgba(255,255,255,0.4) 2px, transparent 2px) 50% 100% / 8px 8px no-repeat, /* 下 */
+        linear-gradient(to right, rgba(255,255,255,0.4) 2px, transparent 2px) 0 50% / 8px 8px no-repeat, /* 左 */
+        linear-gradient(to left, rgba(255,255,255,0.4) 2px, transparent 2px) 100% 50% / 8px 8px no-repeat; /* 右 */
+      opacity: 0.6;
     }
-
-    .d-btn.up { grid-column: 2; grid-row: 1; border-radius: 12px 12px 0 0; }
-    .d-btn.left { grid-column: 1; grid-row: 2; border-radius: 12px 0 0 12px; }
-    .d-btn.right { grid-column: 3; grid-row: 2; border-radius: 0 12px 12px 0; }
-    .d-btn.down { grid-column: 2; grid-row: 3; border-radius: 0 0 12px 12px; }
-
-    /* 十字鍵上的刻痕箭頭 (高對比白色) */
-    .d-btn::before {
-      content: '';
-      display: block;
-      width: 0;
-      height: 0;
-      border-style: solid;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-    }
-    .d-btn.up::before { border-width: 0 7px 9px 7px; border-color: transparent transparent rgba(255,255,255,0.85) transparent; margin-bottom: 4px; }
-    .d-btn.down::before { border-width: 9px 7px 0 7px; border-color: rgba(255,255,255,0.85) transparent transparent transparent; margin-top: 4px; }
-    .d-btn.left::before { border-width: 7px 9px 7px 0; border-color: transparent rgba(255,255,255,0.85) transparent transparent; margin-right: 4px; }
-    .d-btn.right::before { border-width: 7px 0 7px 9px; border-color: transparent transparent transparent rgba(255,255,255,0.85); margin-left: 4px; }
 
     @media (max-width: 768px) {
       .game-wrapper {
@@ -335,8 +308,8 @@
       .hint {
         font-size: 10px;
       }
-      .touch-controls {
-        display: block; /* 小螢幕顯示懸浮十字鍵 */
+      .joystick-area {
+        display: block; /* 手機版顯示虛擬搖桿 */
       }
     }
   </style>
@@ -371,17 +344,12 @@
       <div id="statusOverlay" class="status-overlay">
         <h2>按下「開始遊戲」</h2>
         <p>使用鍵盤方向鍵控制蛇的移動</p>
-        <p class="mobile-hint">手機：可滑動或點擊十字鍵控制方向</p>
+        <p class="mobile-hint">手機：滑動螢幕或使用下方搖桿控制</p>
       </div>
       
-      <div class="touch-controls" id="touchControls">
-        <div class="d-pad">
-          <button type="button" class="d-btn up" data-dir="up"></button>
-          <button type="button" class="d-btn left" data-dir="left"></button>
-          <div class="d-center"></div>
-          <button type="button" class="d-btn right" data-dir="right"></button>
-          <button type="button" class="d-btn down" data-dir="down"></button>
-        </div>
+      <div class="joystick-area" id="joystickZone">
+        <div class="joystick-arrows"></div>
+        <div class="joystick-knob" id="joystickKnob"></div>
       </div>
     </div>
 
@@ -408,7 +376,7 @@
     const startButton = document.getElementById("startButton");
     const statusOverlay = document.getElementById("statusOverlay");
 
-    // ===== 網格大小修改區塊 =====
+    // ===== 網格大小 18x18 =====
     const gridSize = 20;
     const playOffset = 20; 
     const playSize = canvas.width - playOffset * 2; // 360
@@ -476,20 +444,19 @@
     initDifficultyBtns();
     initSnakeColors();
 
+    // 鍵盤操控
     window.addEventListener("keydown", (event) => {
       if (event.key === " " || event.code === "Space" || event.key === "p" || event.key === "P") {
         if (!isGameOver) {
           if (!isRunning && !isPaused && gameLoopId === null) {
             startGame();
             event.preventDefault();
-            event.stopPropagation();
             return;
           }
           if (gameLoopId !== null) {
             if (isPaused) resumeGame();
             else pauseGame();
             event.preventDefault();
-            event.stopPropagation();
           }
         }
         return;
@@ -518,12 +485,12 @@
           nextDirection = { x: 1, y: 0 };
           event.preventDefault();
           break;
-        default:
-          break;
       }
     }, true);
 
-    // Canvas 上的滑動偵測
+    // =========================================
+    // Canvas 滑動偵測 (保留給不想用搖桿的玩家)
+    // =========================================
     let touchStartX = 0;
     let touchStartY = 0;
     const minSwipeDistance = 30; 
@@ -540,6 +507,9 @@
 
     canvas.addEventListener("touchend", (event) => {
       if (event.changedTouches.length !== 1) return;
+      // 確保不是點擊到了虛擬搖桿
+      if (event.target !== canvas) return; 
+
       const endX = event.changedTouches[0].clientX;
       const endY = event.changedTouches[0].clientY;
       const dx = endX - touchStartX;
@@ -547,6 +517,7 @@
       const absDx = Math.abs(dx);
       const absDy = Math.abs(dy);
 
+      // 短點擊畫布 -> 觸發暫停/播放
       if (absDx < minSwipeDistance && absDy < minSwipeDistance) {
         if (!isGameOver) {
           if (!isRunning && !isPaused && gameLoopId === null) {
@@ -561,6 +532,7 @@
 
       if (!isRunning && !isPaused) return;
 
+      // 滑動畫布 -> 改變方向
       if (absDx > absDy) {
         if (dx > 0 && direction.x !== -1) nextDirection = { x: 1, y: 0 };
         else if (dx < 0 && direction.x !== 1) nextDirection = { x: -1, y: 0 };
@@ -570,33 +542,87 @@
       }
     }, { passive: true });
 
-    // ======= 綁定懸浮的十字按鍵 =======
-    const touchControls = document.getElementById("touchControls");
-    function handleDirectionInput(dir) {
-      if (!isGameOver) {
-        if (!isRunning && !isPaused && gameLoopId === null) startGame();
+    // =========================================
+    // 虛擬搖桿 (Virtual Joystick) 邏輯
+    // =========================================
+    const joystickZone = document.getElementById("joystickZone");
+    const joystickKnob = document.getElementById("joystickKnob");
+    let isJoystickActive = false;
+    let joystickCenter = { x: 0, y: 0 };
+    const maxJoystickRadius = 35; // 搖桿推動的最大半徑限制
+
+    // 當手指按在搖桿區
+    joystickZone.addEventListener("touchstart", (e) => {
+      e.preventDefault(); 
+      e.stopPropagation(); // 【關鍵】防止點擊事件穿透到後方的 Canvas 導致意外暫停
+      
+      // 如果遊戲還沒開始，點搖桿順便開始遊戲
+      if (!isGameOver && !isRunning && !isPaused && gameLoopId === null) {
+        startGame();
       }
-      if (!isRunning && !isPaused) return;
+      
+      isJoystickActive = true;
+      joystickZone.classList.add("active");
+      
+      const rect = joystickZone.getBoundingClientRect();
+      joystickCenter = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+      
+      handleJoystickMove(e.touches[0]);
+    }, { passive: false });
 
-      if (dir === "up" && direction.y !== 1) nextDirection = { x: 0, y: -1 };
-      else if (dir === "down" && direction.y !== -1) nextDirection = { x: 0, y: 1 };
-      else if (dir === "left" && direction.x !== 1) nextDirection = { x: -1, y: 0 };
-      else if (dir === "right" && direction.x !== -1) nextDirection = { x: 1, y: 0 };
+    // 當手指在搖桿區滑動
+    joystickZone.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!isJoystickActive) return;
+      handleJoystickMove(e.touches[0]);
+    }, { passive: false });
+
+    // 放開搖桿時，推桿彈回中心
+    const endJoystick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isJoystickActive = false;
+      joystickZone.classList.remove("active");
+      joystickKnob.style.transform = `translate(-50%, -50%)`; // 歸零
+    };
+    joystickZone.addEventListener("touchend", endJoystick);
+    joystickZone.addEventListener("touchcancel", endJoystick);
+
+    // 處理搖桿的視覺跟隨與方向判定
+    function handleJoystickMove(touch) {
+      let dx = touch.clientX - joystickCenter.x;
+      let dy = touch.clientY - joystickCenter.y;
+      const distance = Math.hypot(dx, dy);
+
+      // 限制推桿的視覺範圍
+      if (distance > maxJoystickRadius) {
+        dx = (dx / distance) * maxJoystickRadius;
+        dy = (dy / distance) * maxJoystickRadius;
+      }
+      
+      joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+      // 只有當推動超過一定距離(例如 10px)才判定為有效方向
+      if (distance > 10 && isRunning && !isPaused) {
+        // 判斷主要推動的軸向
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0 && direction.x !== -1) nextDirection = { x: 1, y: 0 };
+          else if (dx < 0 && direction.x !== 1) nextDirection = { x: -1, y: 0 };
+        } else {
+          if (dy > 0 && direction.y !== -1) nextDirection = { x: 0, y: 1 };
+          else if (dy < 0 && direction.y !== -1) nextDirection = { x: 0, y: -1 };
+        }
+      }
     }
 
-    if (touchControls) {
-      touchControls.querySelectorAll(".d-btn").forEach((btn) => {
-        const triggerDir = (e) => {
-          e.preventDefault(); 
-          e.stopPropagation(); // 防止點擊按鈕時觸發底層 Canvas 的滑動偵測
-          const dir = btn.dataset.dir;
-          if (dir) handleDirectionInput(dir);
-        };
-        btn.addEventListener("touchstart", triggerDir, { passive: false });
-        btn.addEventListener("mousedown", triggerDir); 
-      });
-    }
 
+    // =========================================
+    // 遊戲主邏輯
+    // =========================================
     startButton.addEventListener("click", () => {
       if (!isRunning && !isPaused && !isGameOver) startGame();
       else if (isRunning && !isPaused && !isGameOver) pauseGame();
@@ -658,7 +684,7 @@
       statusOverlay.style.display = "flex";
       statusOverlay.innerHTML = `
         <h2>已暫停</h2>
-        <p>按「繼續遊戲」或空白鍵 / P 鍵繼續</p>
+        <p>按「繼續遊戲」或點擊畫布繼續</p>
       `;
     }
 
