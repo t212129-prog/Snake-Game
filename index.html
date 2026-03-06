@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <title>貪吃蛇遊戲 - HTML5 Canvas</title>
   <style>
     /* 整體頁面樣式：深色背景、字體設定 */
@@ -88,6 +88,8 @@
     canvas {
       display: block;
       background: #020617;
+      width: 100%; /* 確保手機版自適應縮放 */
+      height: auto;
     }
 
     /* 遊戲狀態提示（如：遊戲結束、按開始） */
@@ -98,23 +100,30 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      pointer-events: none;
+      pointer-events: none; /* 讓點擊穿透到下方 */
       text-align: center;
       color: #9ca3af;
       font-size: 14px;
       padding: 0 16px;
       box-sizing: border-box;
+      background: rgba(2, 6, 23, 0.6); /* 增加一點背景變暗效果 */
+      z-index: 5;
     }
 
     .status-overlay h2 {
       margin: 0 0 6px;
       font-size: 18px;
       color: #e5e7eb;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .status-overlay p {
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
     }
 
     .status-overlay .mobile-hint {
       font-size: 12px;
-      color: #64748b;
+      color: #94a3b8;
       margin-top: 8px;
     }
 
@@ -230,73 +239,92 @@
       box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
     }
 
-    /* ======= 修改：手機版觸控十字鍵 ======= */
+    /* =========================================
+       修改：手機版觸控十字鍵 (懸浮毛玻璃效果)
+       ========================================= */
     .touch-controls {
       display: none; /* 預設桌面隱藏 */
-      margin: 16px 0 12px;
-      justify-content: center;
-      align-items: center;
+      position: absolute;
+      bottom: 20px; /* 距離畫布底部 20px */
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      opacity: 0.75; /* 預設半透明，不會完全擋住遊戲 */
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+
+    .touch-controls:active {
+      opacity: 1; /* 手指按壓時變得更清晰 */
+      transform: translateX(-50%) scale(0.96); /* 按壓微縮小回饋 */
     }
 
     .d-pad {
       display: grid;
-      grid-template-columns: 45px 45px 45px;
-      grid-template-rows: 45px 45px 45px;
+      grid-template-columns: 48px 48px 48px;
+      grid-template-rows: 48px 48px 48px;
       justify-content: center;
-      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
     }
 
     .d-btn {
-      width: 45px;
-      height: 45px;
-      background: #f8fafc; /* 亮白色，接近參考圖片 */
+      width: 48px;
+      height: 48px;
+      /* 半透明玻璃背景 */
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(6px); /* 毛玻璃模糊效果 */
+      -webkit-backdrop-filter: blur(6px);
       border: none;
       outline: none;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      /* 模擬實體按鍵邊緣反光與暗面 */
-      box-shadow: inset 1px 1px 2px #fff, inset -1px -1px 3px rgba(148, 163, 184, 0.4);
+      /* 邊緣微光與暗角 */
+      box-shadow: 
+        inset 1px 1px 2px rgba(255, 255, 255, 0.2), 
+        inset -1px -1px 3px rgba(0, 0, 0, 0.3),
+        0 0 1px rgba(255, 255, 255, 0.1);
       padding: 0;
       transition: background 0.05s, box-shadow 0.05s;
-      -webkit-tap-highlight-color: transparent; /* 避免手機點擊高光閃爍 */
+      -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
 
     .d-btn:active {
-      background: #e2e8f0;
-      box-shadow: inset 2px 2px 4px rgba(100, 116, 139, 0.3);
+      background: rgba(255, 255, 255, 0.25); /* 按下時稍微亮一點 */
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4);
     }
 
     /* 十字鍵中心無縫過渡區塊 */
     .d-center {
       grid-column: 2;
       grid-row: 2;
-      width: 45px;
-      height: 45px;
-      background: #f8fafc;
-      box-shadow: inset 1px 1px 1px rgba(255, 255, 255, 0.5), inset -1px -1px 1px rgba(148, 163, 184, 0.2);
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      box-shadow: 
+        inset 1px 1px 1px rgba(255, 255, 255, 0.1), 
+        inset -1px -1px 1px rgba(0, 0, 0, 0.2);
     }
 
-    /* 定位與四邊圓角 */
-    .d-btn.up { grid-column: 2; grid-row: 1; border-radius: 8px 8px 0 0; }
-    .d-btn.left { grid-column: 1; grid-row: 2; border-radius: 8px 0 0 8px; }
-    .d-btn.right { grid-column: 3; grid-row: 2; border-radius: 0 8px 8px 0; }
-    .d-btn.down { grid-column: 2; grid-row: 3; border-radius: 0 0 8px 8px; }
+    .d-btn.up { grid-column: 2; grid-row: 1; border-radius: 12px 12px 0 0; }
+    .d-btn.left { grid-column: 1; grid-row: 2; border-radius: 12px 0 0 12px; }
+    .d-btn.right { grid-column: 3; grid-row: 2; border-radius: 0 12px 12px 0; }
+    .d-btn.down { grid-column: 2; grid-row: 3; border-radius: 0 0 12px 12px; }
 
-    /* 十字鍵上的刻痕箭頭 (CSS 畫出的三角形) */
+    /* 十字鍵上的刻痕箭頭 (高對比白色) */
     .d-btn::before {
       content: '';
       display: block;
       width: 0;
       height: 0;
       border-style: solid;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
     }
-    .d-btn.up::before { border-width: 0 6px 8px 6px; border-color: transparent transparent #94a3b8 transparent; margin-bottom: 4px; }
-    .d-btn.down::before { border-width: 8px 6px 0 6px; border-color: #94a3b8 transparent transparent transparent; margin-top: 4px; }
-    .d-btn.left::before { border-width: 6px 8px 6px 0; border-color: transparent #94a3b8 transparent transparent; margin-right: 4px; }
-    .d-btn.right::before { border-width: 6px 0 6px 8px; border-color: transparent transparent transparent #94a3b8; margin-left: 4px; }
+    .d-btn.up::before { border-width: 0 7px 9px 7px; border-color: transparent transparent rgba(255,255,255,0.85) transparent; margin-bottom: 4px; }
+    .d-btn.down::before { border-width: 9px 7px 0 7px; border-color: rgba(255,255,255,0.85) transparent transparent transparent; margin-top: 4px; }
+    .d-btn.left::before { border-width: 7px 9px 7px 0; border-color: transparent rgba(255,255,255,0.85) transparent transparent; margin-right: 4px; }
+    .d-btn.right::before { border-width: 7px 0 7px 9px; border-color: transparent transparent transparent rgba(255,255,255,0.85); margin-left: 4px; }
 
     @media (max-width: 768px) {
       .game-wrapper {
@@ -308,7 +336,7 @@
         font-size: 10px;
       }
       .touch-controls {
-        display: flex; /* 小螢幕顯示十字鍵 */
+        display: block; /* 小螢幕顯示懸浮十字鍵 */
       }
     }
   </style>
@@ -345,15 +373,15 @@
         <p>使用鍵盤方向鍵控制蛇的移動</p>
         <p class="mobile-hint">手機：可滑動或點擊十字鍵控制方向</p>
       </div>
-    </div>
-
-    <div class="touch-controls" id="touchControls">
-      <div class="d-pad">
-        <button type="button" class="d-btn up" data-dir="up"></button>
-        <button type="button" class="d-btn left" data-dir="left"></button>
-        <div class="d-center"></div>
-        <button type="button" class="d-btn right" data-dir="right"></button>
-        <button type="button" class="d-btn down" data-dir="down"></button>
+      
+      <div class="touch-controls" id="touchControls">
+        <div class="d-pad">
+          <button type="button" class="d-btn up" data-dir="up"></button>
+          <button type="button" class="d-btn left" data-dir="left"></button>
+          <div class="d-center"></div>
+          <button type="button" class="d-btn right" data-dir="right"></button>
+          <button type="button" class="d-btn down" data-dir="down"></button>
+        </div>
       </div>
     </div>
 
@@ -380,10 +408,11 @@
     const startButton = document.getElementById("startButton");
     const statusOverlay = document.getElementById("statusOverlay");
 
+    // ===== 網格大小修改區塊 =====
     const gridSize = 20;
-    const playOffset = 10; 
-    const playSize = canvas.width - playOffset * 2; 
-    const tileCount = playSize / gridSize; 
+    const playOffset = 20; 
+    const playSize = canvas.width - playOffset * 2; // 360
+    const tileCount = playSize / gridSize; // 18 格
 
     const difficultyLevels = {
       easy:   { speed: 150, maxObstacles: 0,  stonesPerFruit: 0, pointsPerFruit: 1 },
@@ -494,6 +523,7 @@
       }
     }, true);
 
+    // Canvas 上的滑動偵測
     let touchStartX = 0;
     let touchStartY = 0;
     const minSwipeDistance = 30; 
@@ -540,7 +570,7 @@
       }
     }, { passive: true });
 
-    // ======= 綁定新的十字按鍵 =======
+    // ======= 綁定懸浮的十字按鍵 =======
     const touchControls = document.getElementById("touchControls");
     function handleDirectionInput(dir) {
       if (!isGameOver) {
@@ -556,14 +586,14 @@
 
     if (touchControls) {
       touchControls.querySelectorAll(".d-btn").forEach((btn) => {
-        // 為了讓手機點擊反應更快，推薦加入 touchstart 處理，若不加也可依靠原生 click
         const triggerDir = (e) => {
-          e.preventDefault(); // 防止長按反白
+          e.preventDefault(); 
+          e.stopPropagation(); // 防止點擊按鈕時觸發底層 Canvas 的滑動偵測
           const dir = btn.dataset.dir;
           if (dir) handleDirectionInput(dir);
         };
         btn.addEventListener("touchstart", triggerDir, { passive: false });
-        btn.addEventListener("mousedown", triggerDir); // 桌面滑鼠也能點擊十字鍵
+        btn.addEventListener("mousedown", triggerDir); 
       });
     }
 
@@ -771,9 +801,7 @@
       drawSnake();
     }
 
-    // ======= 修改：加上內框並將網格限制在內框裡 =======
     function drawBackgroundGrid() {
-      // 1. 填滿最外層背景
       const gradient = ctx.createRadialGradient(
         canvas.width * 0.25,
         canvas.height * 0.2,
@@ -787,28 +815,23 @@
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. 設定內框範圍，利用 clip() 限制網格不會超線
       ctx.save();
       const innerRadius = 8;
       ctx.beginPath();
       roundRect(ctx, playOffset, playOffset, playSize, playSize, innerRadius);
-      ctx.clip(); // 限制接下來畫的網格只會出現在此區域內
+      ctx.clip(); 
       
-      // 繪製內框底色（稍微跟背景有層次）
       ctx.fillStyle = "#030712";
       ctx.fill();
 
-      // 繪製網格線
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
       ctx.lineWidth = 1;
       for (let i = 1; i < tileCount; i++) {
-        // 垂直線 (+0.5 確保 Canvas 線條清晰)
         ctx.beginPath();
         ctx.moveTo(playOffset + i * gridSize + 0.5, playOffset);
         ctx.lineTo(playOffset + i * gridSize + 0.5, playOffset + playSize);
         ctx.stroke();
 
-        // 水平線
         ctx.beginPath();
         ctx.moveTo(playOffset, playOffset + i * gridSize + 0.5);
         ctx.lineTo(playOffset + playSize, playOffset + i * gridSize + 0.5);
@@ -816,7 +839,6 @@
       }
       ctx.restore();
 
-      // 3. 補上內框的實體邊框，增加立體感
       ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
